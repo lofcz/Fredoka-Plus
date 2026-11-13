@@ -1,16 +1,4 @@
-# Fredoka One
-
-![preview](documentation/10.png)
-
-Fredoka One is a big, round, bold font that is perfect for adding a little fun to any headline or large text.
-
-The initial Latin component was designed by <a href="mailto:milenabbrandao@gmail.com">Milena Brandão</a>.
-The later Hebrew component was designed by Ben Nathan.
-
-The Fredoka project is led by Ben Nathan, a typeer design foundry based in Israel. 
-To contribute, see <a href="https://github.com/hafontia/Fredoka-One">github.com/hafontia/Fredoka-One</a>
-
-## Czech, Slovak and Polish (version 2.002)
+## Czech, Slovak and Polish
 
 ![Central European specimen](documentation/central-european.png)
 
@@ -21,10 +9,6 @@ Fredoka 2.001 lacks most Central European letters, so browsers fall back to anot
 | Czech | Č č Ď ď Ě ě Ň ň Ř ř Ť ť Ů ů |
 | Slovak | Ľ ľ Ĺ ĺ Ŕ ŕ (with Ď ď Ť ť) |
 | Polish | Ą ą Ć ć Ę ę Ń ń Ś ś Ź ź Ż ż |
-
-German already worked in 2.001 (ä ö ü ß Ä Ö Ü „ “). The capital ẞ is not included; German capitalizes ß as SS.
-
-The letters are built from the font's own bases and accents, following the anchors of the source (the same rule as the existing á, š or å). Ď ť ľ Ľ use a vertical caron drawn from the font's comma. ů and Ů use a copy of the ring with a heavier stroke in the bold weights, where the original ring is much thinner than the other accents; å keeps the original. Everything that worked in 2.001 is unchanged: the same outlines, advances and kerning for every existing character. New letters kern the way the font already kerns its accented letters.
 
 ### Building
 
