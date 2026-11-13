@@ -1,0 +1,8 @@
+# Tools for scripts/add_central_european.py and scripts/build_release.py
+brotli==1.2.1
+fontmake==3.12.2
+fonttools==4.68.0
+glyphsLib==6.17.2
+opentype-sanitizer==9.2.0
+skia-pathops==0.9.2
+uharfbuzz==0.57.0
