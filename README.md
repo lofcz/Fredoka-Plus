@@ -24,7 +24,7 @@ Fredoka 2.001 lacks most Central European letters, so browsers fall back to anot
 
 German already worked in 2.001 (ä ö ü ß Ä Ö Ü „ “). The capital ẞ is not included; German capitalizes ß as SS.
 
-The letters are built from the font's own bases and accents, following the anchors of the source (the same rule as the existing á, š or å). Ď ť ľ Ľ use a vertical caron drawn from the font's comma. Everything that worked in 2.001 is unchanged: the same outlines, advances and kerning for every existing character. New letters kern the way the font already kerns its accented letters.
+The letters are built from the font's own bases and accents, following the anchors of the source (the same rule as the existing á, š or å). Ď ť ľ Ľ use a vertical caron drawn from the font's comma. ů and Ů use a copy of the ring with a heavier stroke in the bold weights, where the original ring is much thinner than the other accents; å keeps the original. Everything that worked in 2.001 is unchanged: the same outlines, advances and kerning for every existing character. New letters kern the way the font already kerns its accented letters.
 
 ### Building
 

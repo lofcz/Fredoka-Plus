@@ -17,11 +17,10 @@ Run it again at any time: it replaces the glyphs it added before.
 
 from __future__ import annotations
 
-import copy
 import sys
 from pathlib import Path
 
-from glyphsLib.classes import GSComponent, GSFont, GSGlyph, GSLayer
+from glyphsLib.classes import GSAnchor, GSComponent, GSFont, GSGlyph, GSLayer, GSNode, GSPath
 
 SOURCE = Path(__file__).resolve().parent.parent / "sources" / "Fredoka.glyphs"
 
@@ -30,6 +29,15 @@ ALT_SCALE = 0.8
 ALT_GAP = 32
 ALT_MIN_RSB = 18
 ALT_GLYPHS = {"dcaron", "tcaron", "lcaron", "Lcaron"}
+
+# Czech ring: the source ring is a hairline in Bold (stroke 81 vs a 181 stem,
+# next to 181-unit dots), which stands out on a letter as frequent as ů. ů Ů use
+# a copy whose stroke is at least this share of the i stem; the outline and its
+# gap above the letter stay the designer's. å keeps the original ring.
+RING = "ringcomb.uring"
+RING_CASE = "ringcomb.uring.case"
+RING_MIN_STROKE = 0.55
+RING_MIN_COUNTER = 0.26  # of the ring's width, so the counter stays open in Condensed Bold
 
 # name: (unicode, base, mark, base anchor, kerning-group source)
 COMPOSITES: dict[str, tuple[str, str, str, str]] = {
@@ -44,8 +52,8 @@ COMPOSITES: dict[str, tuple[str, str, str, str]] = {
     "Rcaron": ("0158", "R", "caroncomb.case", "top"),
     "rcaron": ("0159", "r", "caroncomb", "top"),
     "Tcaron": ("0164", "T", "caroncomb.case", "top"),
-    "Uring": ("016E", "U", "ringcomb.case", "top"),
-    "uring": ("016F", "u", "ringcomb", "top"),
+    "Uring": ("016E", "U", RING_CASE, "top"),
+    "uring": ("016F", "u", RING, "top"),
     # Slovak
     "Lacute": ("0139", "L", "acutecomb.case", "top"),
     "Racute": ("0154", "R", "acutecomb.case", "top"),
@@ -75,7 +83,7 @@ SPECIAL = {
     "lacute": ("013A", "l"),
 }
 ALT_MARK = "caroncomb.alt"
-ADDED = set(COMPOSITES) | set(SPECIAL) | {ALT_MARK}
+ADDED = set(COMPOSITES) | set(SPECIAL) | {ALT_MARK, RING, RING_CASE}
 
 
 def anchor(layer: GSLayer, name: str) -> tuple[float, float]:
@@ -155,10 +163,65 @@ def add_alt_mark(font: GSFont) -> None:
         quote = font.glyphs["comma"].layers[master.id]
         layer = add_layer(glyph, master.id, 0, [])
         for path in quote.paths:
-            path = copy.deepcopy(path)
+            path = clone(path)
             for node in path.nodes:
                 node.position = (round(node.position.x * ALT_SCALE), round(node.position.y * ALT_SCALE))
             layer.paths.append(path)
+
+
+def add_czech_ring(font: GSFont) -> None:
+    """ringcomb with a stroke that holds up next to the other accents."""
+    ring = new_glyph(font, RING, None, None)
+    case = new_glyph(font, RING_CASE, None, None)
+    for glyph in (ring, case):
+        glyph.category, glyph.subCategory = "Mark", "Nonspacing"
+    for master in font.masters:
+        source = font.glyphs["ringcomb"].layers[master.id]
+        layer = add_layer(ring, master.id, source.width, [])
+        outer, inner = sorted(source.paths, key=lambda p: -box_of(p)[2] + box_of(p)[0])
+        ox0, oy0, ox1, oy1 = box_of(outer)
+        ix0, iy0, ix1, iy1 = box_of(inner)
+        stem = stem_width(font.glyphs["i"].layers[master.id])
+        stroke = max((ox1 - ox0 - (ix1 - ix0)) / 2, RING_MIN_STROKE * stem)
+        stroke = min(stroke, (ox1 - ox0) * (1 - RING_MIN_COUNTER) / 2)
+        cx, cy = (ix0 + ix1) / 2, (iy0 + iy1) / 2
+        sx = max(0.15, (ox1 - ox0 - 2 * stroke) / (ix1 - ix0))
+        sy = max(0.15, (oy1 - oy0 - 2 * stroke) / (iy1 - iy0))
+        layer.paths.append(clone(outer))
+        counter = clone(inner)
+        for node in counter.nodes:
+            node.position = (round(cx + (node.position.x - cx) * sx), round(cy + (node.position.y - cy) * sy))
+        layer.paths.append(counter)
+        for a in source.anchors:
+            layer.anchors.append(GSAnchor(a.name, a.position))
+        # The case ring sits where ringcomb.case puts the original.
+        source_case = font.glyphs["ringcomb.case"].layers[master.id]
+        offset = source_case.components[0].position
+        case_layer = add_layer(case, master.id, source_case.width, [(RING, (offset.x, offset.y))])
+        for a in source_case.anchors:
+            case_layer.anchors.append(GSAnchor(a.name, a.position))
+
+
+def clone(path: GSPath) -> GSPath:
+    """Copy of a path without its parent layer (deepcopy would copy the font)."""
+    copy_ = GSPath()
+    copy_.closed = path.closed
+    for node in path.nodes:
+        copy_.nodes.append(GSNode((node.position.x, node.position.y), node.type, node.smooth))
+    return copy_
+
+
+def box_of(path) -> tuple[float, float, float, float]:
+    xs = [n.position.x for n in path.nodes]
+    ys = [n.position.y for n in path.nodes]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def stem_width(layer: GSLayer) -> float:
+    """Width of the i stem (its first contour below the x-height)."""
+    stem = min(layer.paths, key=lambda p: box_of(p)[1])
+    x0, _, x1, _ = box_of(stem)
+    return x1 - x0
 
 
 def add_composites(font: GSFont) -> None:
@@ -210,6 +273,7 @@ def main() -> None:
     assert not existing, existing
     check_rule(font)
     add_alt_mark(font)
+    add_czech_ring(font)
     add_composites(font)
     add_special(font)
     # Upstream is 2.001; the Central European release is 2.002.

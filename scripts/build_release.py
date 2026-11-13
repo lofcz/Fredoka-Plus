@@ -73,8 +73,9 @@ def add_glyphs(font: TTFont, donor: TTFont) -> list[str]:
     known = set(font.getGlyphOrder())
     # newsheqel is uni20AA in newer builds; it is not new.
     new = [g for g in donor.getGlyphOrder() if g not in known and g != "uni20AA"]
-    expected = set(BASE_OF) | {"uni030C.alt"}
-    assert set(new) == expected, (sorted(set(new) ^ expected))
+    marks = {g for g in new if g not in BASE_OF}
+    assert set(BASE_OF) <= set(new), sorted(set(BASE_OF) - set(new))
+    assert marks == {"uni030C.alt", "uni030A.uring", "uni030A.uring.case"}, sorted(marks)
     font.setGlyphOrder(font.getGlyphOrder() + new)
     glyf, hmtx, gvar = font["glyf"], font["hmtx"], font["gvar"]
     for name in new:
@@ -97,7 +98,7 @@ def add_glyphs(font: TTFont, donor: TTFont) -> list[str]:
                     table.cmap[code] = name
     classes = font["GDEF"].table.GlyphClassDef.classDefs
     for name in new:
-        classes[name] = 3 if name == "uni030C.alt" else 1
+        classes[name] = 1 if name in BASE_OF else 3
     add_HVAR(font)
     font["maxp"].numGlyphs = len(font.getGlyphOrder())
     return new
